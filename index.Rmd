@@ -78,6 +78,145 @@ plot6 = plot5 + geom_text(aes(y = pct ,
 plot6 + coord_flip()
 ```
 
+## Exercise 2: Add the elements missing in the last Lollipop plot. 
 
+```{r lolliplot, eval=TRUE}
+tableFreqO=tableFreq[order(tableFreq$pct),]
 
+tableFreqO$gap=tableFreqO$pct-25
+
+tableFreqO$PositiveGap=ifelse(tableFreqO$gap>0,T,F)
+
+base = ggplot(tableFreqO, aes(locale,gap,color=PositiveGap,
+                              label = round(gap,3))) #  change
+lolliplot1=base + geom_segment(aes(y = 0, 
+                                   x = locale, 
+                                   yend = gap, 
+                                   xend = locale), color = "gray") 
+lolliplot2=lolliplot1 + geom_point() 
+
+lolliplot3= lolliplot2 + scale_x_discrete(limits=tableFreqO$locale) 
+# annotating and moving the text on the horizontal
+lolliplot4 = lolliplot3 + geom_text(nudge_x=0.3,show.legend = FALSE) 
+
+lolliplot5 = lolliplot4 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+
+lolliplot6 = lolliplot5 + theme(
+                    plot.caption = element_text(hjust = 1), # default was 1
+                    plot.title = element_text(hjust = 0.5))
+
+lolliplot6
+```
+
+## Exercise 3: Create a Box Plot for the Highest Grades Offered. 
+
+```{r titletext2, eval=TRUE}
+titleText2='Distribution of Highest Grades Offered at WA Public Schools'
+```
+
+```{r ggbox, eval=TRUE}
+library(ggplot2)
+box1 = ggplot(eduwa, aes(y=as.numeric(High.Grade))) +   theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+box1 = box1 + geom_boxplot() + coord_flip() # to show it horizontally
+# Create labels that use the original ordinal levels
+ordLabels= levels(eduwa$High.Grade)
+# Add the labels (based on the ordLabels) to the plot 
+# Breaks are from 1 to 15 because there are 15 grades
+box2 = box1 + scale_y_continuous(labels=ordLabels,breaks=1:15)
+box3 = box2 + labs(title=titleText2,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+box4 = box3 + ylab("Grades Offered") 
+box5 = box4 + theme(plot.title = element_text(family="Times", color="black", size=14, face="bold", hjust = 0.5), plot.caption = element_text(family="Times", color="black", size=10, face="plain", vjust = 0), axis.title.x = element_text(family="Times", color="black", size=10, face="italic", vjust = 0.5, hjust = 0.5))
+box5
+```
+
+## Exercise 4: Make a histogram for the variable FREE LUNCH, and make sure it has all the right elements, and get rid of unnecessary elements. 
+
+```{r}
+#ggplot
+eduwa2=eduwa[complete.cases(eduwa$Free.Lunch),]
+library(ggplot2)
+base= ggplot(eduwa2,aes(x = Free.Lunch))  
+h1= base + geom_histogram(breaks=seq(0, 1800, 100), 
+                          boundary=0, 
+                          col="red", 
+                          fill="blue", 
+                          alpha=.3, 
+                          na.rm = TRUE, 
+                          inherit.aes = TRUE)
+
+h1= h1 + stat_bin(binwidth = 100, aes(label=..count..), cex=2.5, 
+                  geom = "text", boundary = 0,vjust=-0.5)
+
+h1= h1 + labs(title="Rates at Which Schools Offer Free Lunch to Students", subtitle =sourceText, x="Quantity of Free Lunches", y="Number of Schools") + 
+  ylim(c(0,900))
+h2 = h1 + scale_x_continuous("Quantity of Free Lunches", breaks=seq(0, 1800, 100), limits = c(0,1800))
+h2
+```
+
+## Exercise 5: Make a Histogram and a Density Plot using GGplot for the mean values of Student.Teacher.Ratio
+
+```{r}
+eduwa3=eduwa[complete.cases(eduwa$Student.Teacher.Ratio),]
+
+tapply(eduwa3$Student.Teacher.Ratio, 
+       eduwa3$County, 
+       mean,
+       na.rm=T)
+
+meanValues=tapply(eduwa3$Student.Teacher.Ratio, 
+                  eduwa3$County, 
+                  mean)
+
+df.T=as.data.frame(meanValues)
+names(df.T)=c('StudentTeacherRatio')
+```
+
+```{r STRhist, eval=TRUE}
+library(ggplot2)
+ggplot(data = df.T, aes(x= StudentTeacherRatio)) +
+  geom_histogram(breaks=seq(8, 24, by=2),
+                       col="red",
+                       fill="blue",
+                       alpha=.2,
+                       na.rm = TRUE,
+                       inherit.aes = TRUE) + 
+  labs(title="WA Student Teacher Ratios", subtitle =sourceText, x="Student Teacher Ratios", y="Number of Schools") + 
+  ylim(c(0,20)) +
+  stat_bin(binwidth = 2, aes(label=..count..), cex=2.5, 
+                  geom = "text", boundary = 0,vjust=-0.5) +
+  scale_x_continuous(breaks=seq(8, 24, 2), limits = c(8,24)) +
+  geom_vline(aes(xintercept = mean(df.T$StudentTeacherRatio),colour="mean"),
+                           show.legend  = TRUE) +
+  geom_vline(aes(xintercept = median(df.T$StudentTeacherRatio),colour="median"),
+                           show.legend  = TRUE) + 
+                scale_color_manual(name = NULL, 
+                                   values = c(median = "blue", mean = "green"))
+```
+
+```{r STRDensity, eval=TRUE}
+base= ggplot(data=df.T, aes(x=StudentTeacherRatio)) + 
+  geom_density(col="red",
+               fill="blue",
+               alpha=.2) + 
+  labs(title="Density Plot of Average WA Student Teacher Ratios", subtitle =sourceText, x="Student Teacher Ratios", y="Number of Schools") + 
+  ylim(c(0,.18))
+
+density1 = base + geom_vline(aes(xintercept = mean(eduwa3$Student.Teacher.Ratio),colour="mean"),
+                           show.legend  = TRUE) +
+                geom_vline(aes(xintercept = median(eduwa3$Student.Teacher.Ratio),colour="median"),
+                           show.legend  = TRUE) + 
+                scale_color_manual(name = NULL, 
+                                   values = c(median = "blue", mean = "red"))
+
+density2 = density1 +  scale_x_continuous(breaks=seq(0,24,2))
+density2 
+```
 
